@@ -12,41 +12,18 @@
     <div id="catalog"></div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", async function () {
+        document.addEventListener("DOMContentLoaded", function () {
             const token = localStorage.getItem("access_token");
 
+            // 🚀 Si no hay token, redirigir a login.html
             if (!token) {
                 window.location.href = "login.html";
                 return;
             }
 
-            const isValid = await validateToken(token);
-            if (!isValid) {
-                localStorage.removeItem("access_token");
-                window.location.href = "login.html";
-                return;
-            }
-
+            // 🚀 Si el token existe, cargar los productos
             loadProducts();
         });
-
-        async function validateToken(token) {
-            try {
-                const response = await fetch("http://localhost:8002/validate-token", { 
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-
-                if (!response.ok) {
-                    return false;
-                }
-
-                return true;
-            } catch (error) {
-                console.error("Error validando el token:", error);
-                return false;
-            }
-        }
 
         function loadProducts() {
             const catalogContainer = document.getElementById("catalog");
@@ -81,20 +58,10 @@
         }
 
         document.getElementById("logout").addEventListener("click", function () {
-            const token = localStorage.getItem("access_token");
-
-            fetch("http://localhost:8002/logout", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${token}` }
-            }).then(response => {
-                if (response.ok) {
-                    localStorage.removeItem("access_token"); 
-                    window.location.href = "login.html"; 
-                } else {
-                    alert("Error al cerrar sesión.");
-                }
-            });
+            localStorage.removeItem("access_token"); // 🚀 Eliminar token
+            window.location.href = "login.html"; // 🚀 Redirigir a login
         });
     </script>
 </body>
 </html>
+
