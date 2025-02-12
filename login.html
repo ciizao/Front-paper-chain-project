@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            width: 250px;
+        }
+        button {
+            cursor: pointer;
+        }
+        #responseMessage {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Register User</h2>
+    
+    <form id="registrationForm">
+        <input type="text" id="name" placeholder="Name" required>
+        <br>
+        
+        <input type="email" id="email" placeholder="Email" required>
+        <br>
+        
+        <input type="password" id="password" placeholder="Password" required>
+        <br>
+        
+        <button type="submit">Register</button>
+    </form>
+
+    <p id="responseMessage"></p>
+
+    <script>
+        document.getElementById("registrationForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            const responseMessage = document.getElementById("responseMessage");
+
+            try {
+                const response = await fetch("http://3.220.99.156:8001/register", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseMessage.style.color = "green";
+                    responseMessage.textContent = "User registered successfully! Redirecting to login...";
+                    
+                    setTimeout(() => {
+                        window.location.href = "login.html";
+                    }, 2000);
+                } else {
+                    responseMessage.style.color = "red";
+                    responseMessage.textContent = data.detail || "Registration failed";
+                }
+            } catch (error) {
+                responseMessage.style.color = "red";
+                responseMessage.textContent = "Error connecting to server";
+            }
+        });
+    </script>
+
+</body>
+</html>
