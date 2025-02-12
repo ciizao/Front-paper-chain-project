@@ -21,7 +21,10 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@34.196.50.79 << 'EOF'
+            sudo chown -R ubuntu:ubuntu /var/www/html
+            sudo chmod -R 755 /var/www/html
             cd /var/www/html
             git config --global --add safe.directory /var/www/html
             git pull origin main
           EOF
+
