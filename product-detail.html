@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Producto</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <button onclick="goBack()">Volver</button>
+    <h1>Detalle del Producto</h1>
+    <div id="product-detail"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const productDetailContainer = document.getElementById("product-detail");
+            const productId = localStorage.getItem("selectedProduct");
+
+            if (!productId) {
+                window.location.href = "catalog.html"; 
+                return;
+            }
+
+            fetch(`http://34.200.95.242:8000/products/${productId}`)
+            .then(response => response.json())
+            .then(product => {
+                productDetailContainer.innerHTML = `
+                    <img src="${product.image_url}" alt="${product.name}" class="product-image">
+                    <h2>${product.name}</h2>
+                    <p>${product.detail}</p>
+                    <p>Precio: $${product.price}</p>
+                    <p>Categoría: ${product.category}</p>
+                    <p>Marca: ${product.brand}</p>
+                    <p>Stock disponible: ${product.stock}</p>
+                    <button onclick="addToCart('${product.id}')">Agregar al carrito</button>
+                `;
+            })
+            .catch(error => {
+                console.error("Error al obtener detalles del producto:", error);
+            });
+        });
+
+        function goBack() {
+            window.location.href = "catalog.html";
+        }
+
+        function addToCart(productId) {
+            alert("Producto agregado al carrito: " + productId);
+            
+        }
+    </script>
+</body>
+</html>
