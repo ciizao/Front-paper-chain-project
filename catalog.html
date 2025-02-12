@@ -21,7 +21,7 @@
                 return;
             }
 
-            // 🚀 Si el token existe, cargar los productos
+            // 🚀 Si hay token, cargar los productos
             loadProducts();
         });
 
@@ -49,6 +49,9 @@
                     `;
                     catalogContainer.appendChild(productCard);
                 });
+            })
+            .catch(error => {
+                console.error("Error al cargar los productos:", error);
             });
         }
 
@@ -58,10 +61,37 @@
         }
 
         document.getElementById("logout").addEventListener("click", function () {
-            localStorage.removeItem("access_token"); // 🚀 Eliminar token
-            window.location.href = "login.html"; // 🚀 Redirigir a login
+            const token = localStorage.getItem("access_token");
+
+            if (!token) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            // 🚀 Enviar token al microservicio de logout
+            fetch("http://localhost:8002/logout", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    localStorage.removeItem("access_token"); // 🚀 Borrar token del navegador
+                    window.location.href = "login.html"; // 🚀 Redirigir a login
+                } else {
+                    return response.json().then(data => { 
+                        alert("Error al cerrar sesión: " + data.detail);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error al cerrar sesión:", error);
+            });
         });
     </script>
 </body>
 </html>
+
 
