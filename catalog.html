@@ -19,7 +19,7 @@
 
             // Logout functionality
             logoutButton.addEventListener("click", function () {
-                fetch("http://localhost:8002/logout", {
+                fetch("http://3.220.99.156:8002/logout", {
                     method: "POST",
                     headers: { "Authorization": `Bearer ${token}` }
                 }).then(() => {
