@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Productos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <button id="logout">Logout</button>
+    <h1>Catálogo de Productos</h1>
+    <div id="catalog"></div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const catalogContainer = document.getElementById("catalog");
+            const logoutButton = document.getElementById("logout");
+            const token = localStorage.getItem("access_token"); // CORREGIDO: Se usa "access_token"
+
+            // Logout functionality
+            logoutButton.addEventListener("click", function () {
+                fetch("http://localhost:8002/logout", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}` }
+                }).then(() => {
+                    localStorage.removeItem("access_token"); // CORREGIDO: Se elimina "access_token"
+                    window.location.href = "login.html";
+                });
+            });
+
+            // Fetch products from GraphQL API
+            fetch("http://18.234.5.75:4000/products", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: "{ catalogProducts {id name price category brand image_url } }" })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const products = data.data.catalogProducts;
+                products.forEach(product => {
+                    const productCard = document.createElement("div");
+                    productCard.classList.add("product-card");
+                    productCard.innerHTML = `
+                        <img src="${product.image_url}" alt="${product.name}" class="product-image">
+                        <h3>${product.name}</h3>
+                        <p>Precio: $${product.price}</p>
+                        <p>Categoría: ${product.category}</p>
+                        <p>Marca: ${product.brand}</p>
+                        <button onclick="viewDetail('${product.id}')">Detalle</button>
+                    `;
+                    catalogContainer.appendChild(productCard);
+                });
+            });
+        });
+
+        function viewDetail(productId) {
+            localStorage.setItem("selectedProduct", productId);
+            window.location.href = "product-detail.html";
+        }
+    </script>
+</body>
+</html>
