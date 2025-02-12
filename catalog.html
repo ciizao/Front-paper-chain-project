@@ -15,13 +15,11 @@
         document.addEventListener("DOMContentLoaded", function () {
             const token = localStorage.getItem("access_token");
 
-            // 🚀 Si no hay token, redirigir a login.html
             if (!token) {
                 window.location.href = "login.html";
                 return;
             }
 
-            // 🚀 Si hay token, cargar los productos
             loadProducts();
         });
 
@@ -68,8 +66,7 @@
                 return;
             }
 
-            // 🚀 Enviar token al microservicio de logout
-            fetch("http://localhost:8002/logout", {
+            fetch("http://3.220.99.156:8006/logout", {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -78,8 +75,8 @@
             })
             .then(response => {
                 if (response.ok) {
-                    localStorage.removeItem("access_token"); // 🚀 Borrar token del navegador
-                    window.location.href = "login.html"; // 🚀 Redirigir a login
+                    localStorage.removeItem("access_token"); 
+                    window.location.href = "login.html"; 
                 } else {
                     return response.json().then(data => { 
                         alert("Error al cerrar sesión: " + data.detail);
