@@ -10,25 +10,47 @@
     <button id="logout">Logout</button>
     <h1>Catálogo de Productos</h1>
     <div id="catalog"></div>
-    
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const catalogContainer = document.getElementById("catalog");
-            const logoutButton = document.getElementById("logout");
-            const token = localStorage.getItem("access_token"); // CORREGIDO: Se usa "access_token"
 
-            // Logout functionality
-            logoutButton.addEventListener("click", function () {
-                fetch("http://3.220.99.156:8002/logout", {
+    <script>
+        document.addEventListener("DOMContentLoaded", async function () {
+            const token = localStorage.getItem("access_token");
+
+            if (!token) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            const isValid = await validateToken(token);
+            if (!isValid) {
+                localStorage.removeItem("access_token");
+                window.location.href = "login.html";
+                return;
+            }
+
+            loadProducts();
+        });
+
+        async function validateToken(token) {
+            try {
+                const response = await fetch("http://localhost:8002/validate-token", { 
                     method: "POST",
                     headers: { "Authorization": `Bearer ${token}` }
-                }).then(() => {
-                    localStorage.removeItem("access_token"); // CORREGIDO: Se elimina "access_token"
-                    window.location.href = "login.html";
                 });
-            });
 
-            // Fetch products from GraphQL API
+                if (!response.ok) {
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error("Error validando el token:", error);
+                return false;
+            }
+        }
+
+        function loadProducts() {
+            const catalogContainer = document.getElementById("catalog");
+
             fetch("http://18.234.5.75:4000/products", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -51,12 +73,28 @@
                     catalogContainer.appendChild(productCard);
                 });
             });
-        });
+        }
 
         function viewDetail(productId) {
             localStorage.setItem("selectedProduct", productId);
             window.location.href = "product-detail.html";
         }
+
+        document.getElementById("logout").addEventListener("click", function () {
+            const token = localStorage.getItem("access_token");
+
+            fetch("http://localhost:8002/logout", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            }).then(response => {
+                if (response.ok) {
+                    localStorage.removeItem("access_token"); 
+                    window.location.href = "login.html"; 
+                } else {
+                    alert("Error al cerrar sesión.");
+                }
+            });
+        });
     </script>
 </body>
 </html>
