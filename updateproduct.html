@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Product</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffc130;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            font-size: 26px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+            text-align: left;
+        }
+        input {
+            width: 400px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 150px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .back-btn {
+            background-color: #d9534f;
+        }
+        .back-btn:hover {
+            background-color: #c9302c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Update Product</h1>
+        <form id="updateProductForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" required>
+
+            <label for="price">Price:</label>
+            <input type="number" id="price" step="0.01" required>
+
+            <label for="category">Category:</label>
+            <input type="text" id="category" required>
+
+            <label for="brand">Brand:</label>
+            <input type="text" id="brand" required>
+
+            <label for="stock">Stock:</label>
+            <input type="number" id="stock" required>
+
+            <label for="image_url">Image URL:</label>
+            <input type="text" id="image_url" required>
+
+            <button type="submit">Update Product</button>
+            <button type="button" class="back-btn" onclick="goBack()">← Back to Products</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const productId = localStorage.getItem("selectedProductId");
+            if (!productId) {
+                alert("No product selected.");
+                window.location.href = "products.html";
+                return;
+            }
+
+            fetch(`http://18.234.5.75:4000/products`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: `{ allProducts { id name price category brand stock image_url } }` })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const products = data.data.allProducts;
+                const product = products.find(p => p.id === productId);
+
+                if (product) {
+                    document.getElementById("name").value = product.name;
+                    document.getElementById("price").value = product.price;
+                    document.getElementById("category").value = product.category;
+                    document.getElementById("brand").value = product.brand;
+                    document.getElementById("stock").value = product.stock;
+                    document.getElementById("image_url").value = product.image_url;
+                } else {
+                    alert("Product not found.");
+                    window.location.href = "products.html";
+                }
+            })
+            .catch(error => console.error("Error fetching product details:", error));
+
+            document.getElementById("updateProductForm").addEventListener("submit", function (event) {
+                event.preventDefault();
+                const updatedData = {
+                    name: document.getElementById("name").value,
+                    price: parseFloat(document.getElementById("price").value),
+                    category: document.getElementById("category").value,
+                    brand: document.getElementById("brand").value,
+                    stock: parseInt(document.getElementById("stock").value, 10),
+                    image_url: document.getElementById("image_url").value
+                };
+
+                fetch(`http://18.234.5.75:3002/api/products/${productId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(updatedData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert("Product updated successfully.");
+                    window.location.href = "products.html";
+                })
+                .catch(error => console.error("Error updating product:", error));
+            });
+        });
+
+        function goBack() {
+            window.location.href = "products.html";
+        }
+    </script>
+
+</body>
+</html>
+
