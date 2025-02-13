@@ -4,36 +4,138 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle del Producto</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffc130;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .title {
+            font-size: 40px;
+            font-weight: bold;
+            font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .product-image {
+            width: 40%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .product-info {
+            width: 60%;
+            text-align: left;
+        }
+        h2 {
+            font-size: 24px;
+            color: #333;
+            margin-top: 0;
+        }
+        p {
+            color: rgb(82, 80, 80);
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+        input {
+            width: 60px;
+            padding: 8px;
+            text-align: center;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .back-btn {
+            background-color: #d9534f;
+        }
+        .back-btn:hover {
+            background-color: #c9302c;
+        }
+        .cart-btn {
+            background-color: #28a745;
+        }
+        .cart-btn:hover {
+            background-color: #218838;
+        }
+    </style>
 </head>
 <body>
-    <button onclick="goBack()">Volver</button>
-    <h1>Detalle del Producto</h1>
-    <div id="product-detail"></div>
+    <div class="title">CRISBOOK</div>
+    <div class="container">
+        <img id="product-image" class="product-image" alt="Producto">
+        <div class="product-info">
+            <h2 id="product-name"></h2>
+            <p id="product-detail"></p>
+            <p><strong>Precio:</strong> <span id="product-price"></span></p>
+            <p><strong>Categoría:</strong> <span id="product-category"></span></p>
+            <p><strong>Marca:</strong> <span id="product-brand"></span></p>
+            <p><strong>Stock disponible:</strong> <span id="product-stock"></span></p>
+            <label for="quantity">Cantidad:</label>
+            <input type="number" id="quantity" min="1" value="1">
+            <div class="buttons">
+                <button class="back-btn" onclick="goBack()">← Volver</button>
+                <button onclick="addToCart()">🛍️ Agregar al carrito</button>
+                <button class="cart-btn" id="view-cart" onclick="viewCart()">🛒 Ver Carrito</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const productDetailContainer = document.getElementById("product-detail");
             const productId = localStorage.getItem("selectedProduct");
 
             if (!productId) {
-                window.location.href = "catalog.html"; 
+                window.location.href = "catalog.html";
                 return;
             }
 
             fetch(`http://34.200.95.242:8000/products/${productId}`)
             .then(response => response.json())
             .then(product => {
-                productDetailContainer.innerHTML = `
-                    <img src="${product.image_url}" alt="${product.name}" class="product-image">
-                    <h2>${product.name}</h2>
-                    <p>${product.detail}</p>
-                    <p>Precio: $${product.price}</p>
-                    <p>Categoría: ${product.category}</p>
-                    <p>Marca: ${product.brand}</p>
-                    <p>Stock disponible: ${product.stock}</p>
-                    <button onclick="addToCart('${product.id}')">Agregar al carrito</button>
-                `;
+                document.getElementById("product-image").src = product.image_url;
+                document.getElementById("product-name").textContent = product.name;
+                document.getElementById("product-detail").textContent = product.detail;
+                document.getElementById("product-price").textContent = `$${product.price}`;
+                document.getElementById("product-category").textContent = product.category;
+                document.getElementById("product-brand").textContent = product.brand;
+                document.getElementById("product-stock").textContent = product.stock;
             })
             .catch(error => {
                 console.error("Error al obtener detalles del producto:", error);
@@ -44,10 +146,46 @@
             window.location.href = "catalog.html";
         }
 
-        function addToCart(productId) {
-            alert("Producto agregado al carrito: " + productId);
-            
+        function addToCart() {
+            const productId = localStorage.getItem("selectedProduct");
+            const quantity = document.getElementById("quantity").value;
+            const token = localStorage.getItem("access_token"); 
+
+            if (!token) {
+                alert("Debes iniciar sesión para agregar productos al carrito.");
+                return;
+            }
+
+            const cartData = {
+                product_id: productId,
+                quantity: parseInt(quantity, 10)
+            };
+
+            fetch("http://3.213.45.98:8086/api/cart/add", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(cartData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Producto agregado al carrito con éxito.");
+                } else {
+                    alert("Error al agregar al carrito: " + (data.message || "Inténtalo nuevamente."));
+                }
+            })
+            .catch(error => {
+                alert("Ocurrió un error al agregar el producto.");
+            });
+        }
+
+        function viewCart() {
+            window.location.href = "cart.html";
         }
     </script>
 </body>
 </html>
+
