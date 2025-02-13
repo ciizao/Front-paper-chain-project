@@ -31,10 +31,29 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            width: 20px;
+            width: 80px;
         }
         #logout:hover {
             background-color: #c9302c;
+        }
+        .filter-container {
+            margin-bottom: 20px;
+        }
+        select, #filter-btn {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin: 5px;
+        }
+        #filter-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width:70px;
+        }
+        #filter-btn:hover {
+            background-color: #0056b3;
         }
         .catalog-container {
             display: flex;
@@ -45,7 +64,7 @@
             margin: auto;
         }
         .product-card {
-            background: rgb(219, 219, 226);
+            background: #f1e0b8;
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
@@ -53,18 +72,18 @@
             text-align: center;
         }
         .product-image {
-            width: 100%;
-            height: 180px;
+            width: 90%;
+            height: 170px;
             object-fit: cover;
             border-radius: 8px;
         }
         h3 {
             font-size: 18px;
-            color: white;
+            color: rgb(0, 0, 0);
             margin-top: 10px;
         }
         p {
-            color: white;
+            color: rgb(82, 80, 80);
             margin: 5px 0;
             font-size: 14px;
         }
@@ -88,6 +107,23 @@
     <div class="title">CRISBOOK</div>
     <button id="logout">Logout</button>
     <h1>Catálogo de Productos</h1>
+
+    <div class="filter-container">
+        <select id="category">
+            <option value="">Seleccione una Categoría</option>
+            <option value="Libro">Libro</option>
+            <option value="Esfero">Esfero</option>
+            <option value="Lapiz">Lapiz</option>
+        </select>
+        <select id="brand">
+            <option value="">Seleccione una Marca</option>
+            <option value="Norma">Norma</option>
+            <option value="Estilo">Estilo</option>
+            <option value="Bic">Bic</option>
+        </select>
+        <button id="filter-btn">Filtrar</button>
+    </div>
+
     <div id="catalog" class="catalog-container"></div>
 
     <script>
@@ -102,40 +138,46 @@
             loadProducts();
         });
 
-        function loadProducts() {
+        function loadProducts(category = "", brand = "") {
             const catalogContainer = document.getElementById("catalog");
+            catalogContainer.innerHTML = ""; // Limpiar el contenedor
 
-            fetch("http://18.234.5.75:4000/products", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: "{ catalogProducts {id name price category brand image_url } }" })
-            })
-            .then(response => response.json())
-            .then(data => {
-                const products = data.data.catalogProducts;
-                products.forEach(product => {
-                    const productCard = document.createElement("div");
-                    productCard.classList.add("product-card");
-                    productCard.innerHTML = `
-                        <img src="${product.image_url}" alt="${product.name}" class="product-image">
-                        <h3>${product.name}</h3>
-                        <p>Precio: $${product.price}</p>
-                        <p>Categoría: ${product.category}</p>
-                        <p>Marca: ${product.brand}</p>
-                        <button onclick="viewDetail('${product.id}')">Detalle</button>
-                    `;
-                    catalogContainer.appendChild(productCard);
+            let url = "http://34.200.95.242:8005/api/search?";
+            if (category) url += `category=${category}&`;
+            if (brand) url += `brand=${brand}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(product => {
+                        const productCard = document.createElement("div");
+                        productCard.classList.add("product-card");
+                        productCard.innerHTML = `
+                            <img src="${product.image_url}" alt="${product.name}" class="product-image">
+                            <h3>${product.name}</h3>
+                            <p>Precio: $${product.price}</p>
+                            <p>Categoría: ${product.category}</p>
+                            <p>Marca: ${product.brand}</p>
+                            <button onclick="viewDetail('${product.id}')">Detalle</button>
+                        `;
+                        catalogContainer.appendChild(productCard);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error al cargar los productos filtrados:", error);
                 });
-            })
-            .catch(error => {
-                console.error("Error al cargar los productos:", error);
-            });
         }
 
         function viewDetail(productId) {
             localStorage.setItem("selectedProduct", productId);
             window.location.href = "product-detail.html";
         }
+
+        document.getElementById("filter-btn").addEventListener("click", function () {
+            const selectedCategory = document.getElementById("category").value;
+            const selectedBrand = document.getElementById("brand").value;
+            loadProducts(selectedCategory, selectedBrand);
+        });
 
         document.getElementById("logout").addEventListener("click", function () {
             const token = localStorage.getItem("access_token");
@@ -169,6 +211,7 @@
     </script>
 </body>
 </html>
+
 
 
 
