@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Details</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #ffc130;
+                text-align: center;
+                margin: 0;
+                padding: 20px;
+            }
+            .container {
+                max-width: 800px;
+                margin: auto;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+            }
+            .order-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: #f1e0b8;
+                padding: 10px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                text-align: left;
+            }
+            h1 {
+                font-size: 30px;
+                color: #333;
+            }
+            button {
+                background-color: #007bff;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 16px;
+                transition: background 0.3s;
+                margin: 5px;
+            }
+            button:hover {
+                background-color: #0056b3;
+            }
+            .cancel-btn {
+                background-color: #d9534f;
+            }
+            .cancel-btn:hover {
+                background-color: #c9302c;
+            }
+            .pay-btn {
+                background-color: #28a745;
+            }
+            .pay-btn:hover {
+                background-color: #218838;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Order Details</h1>
+            <div id="order-details"></div>
+            <button onclick="cancelOrder()" class="cancel-btn">Cancel Order</button>
+            <button onclick="payOrder()" class="pay-btn">Pay</button>
+        </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = localStorage.getItem("access_token");
+            const orderId = localStorage.getItem("order_id");
+
+            if (!token) {
+                alert("Your session has expired. Please log in again.");
+                window.location.href = "login.html";
+                return;
+            }
+
+            if (!orderId) {
+                alert("No order found.");
+                window.location.href = "cart.html";
+                return;
+            }
+
+            fetch(`http://52.23.109.228:5002/api/order/${orderId}`, {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+            .then(response => {
+                if (response.status === 401) { 
+                    alert("Session expired. Please log in again.");
+                    localStorage.removeItem("access_token");
+                    window.location.href = "login.html";
+                    return;
+                }
+                return response.json();
+            })
+            .then(order => {
+                const orderDetailsContainer = document.getElementById("order-details");
+                let itemsHTML = "";
+
+                order.orderItems.forEach(item => {
+                    itemsHTML += `
+                        <div class="order-item">
+                            <h3>${item.name}</h3>
+                            <p>Price: $${item.price}</p>
+                            <p>Quantity: ${item.quantity}</p>
+                        </div>
+                    `;
+                });
+
+                orderDetailsContainer.innerHTML = `
+                    <p><strong>Order ID:</strong> ${order.id}</p>
+                    <p><strong>Status:</strong> ${order.status}</p>
+                    <p><strong>Total:</strong> $${order.total_price}</p>
+                    <h2>Products</h2>
+                    ${itemsHTML}
+                `;
+            })
+            .catch(error => {
+                console.error("Error fetching order details:", error);
+            });
+        });
+
+        function cancelOrder() {
+            const token = localStorage.getItem("access_token");
+            const orderId = localStorage.getItem("order_id");
+
+            if (!token || !orderId) {
+                alert("No order available to cancel.");
+                return;
+            }
+
+            const confirmCancel = confirm("Are you sure you want to cancel this order?");
+            if (!confirmCancel) {
+                return;
+            }
+
+            fetch(`http://52.23.109.228:5003/api/order/cancel/${orderId}`, {
+                method: "PUT",
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Order successfully canceled.");
+                    localStorage.removeItem("order_id");
+                    window.location.href = "catalog.html";
+                } else {
+                    alert("Error canceling the order.");
+                }
+            })
+            .catch(error => {
+                console.error("Error canceling the order:", error);
+            });
+        }
+    </script>
+</body>
+</html>
+

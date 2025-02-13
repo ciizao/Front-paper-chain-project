@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo de Productos</title>
+    <title>Product Catalog</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -19,8 +19,7 @@
             color: #333;
             margin-bottom: 20px;
         }
-        #logout {
-            background-color: #d9534f;
+        #logout, #view-cart {
             color: white;
             border: none;
             padding: 6px 12px;
@@ -30,11 +29,21 @@
             transition: background 0.3s;
             position: absolute;
             top: 10px;
+            width: 100px;
+        }
+        #logout {
+            background-color: #d9534f;
             right: 10px;
-            width: 80px;
         }
         #logout:hover {
             background-color: #c9302c;
+        }
+        #view-cart {
+            background-color: #28a745;
+            left: 10px;
+        }
+        #view-cart:hover {
+            background-color: #218838;
         }
         .filter-container {
             margin-bottom: 20px;
@@ -50,7 +59,7 @@
             color: white;
             border: none;
             cursor: pointer;
-            width:70px;
+            width: 80px;
         }
         #filter-btn:hover {
             background-color: #0056b3;
@@ -106,22 +115,23 @@
 <body>
     <div class="title">CRISBOOK</div>
     <button id="logout">Logout</button>
-    <h1>Catálogo de Productos</h1>
+    <button id="view-cart">View Cart</button>
+    <h1>Product Catalog</h1>
 
     <div class="filter-container">
         <select id="category">
-            <option value="">Seleccione una Categoría</option>
+            <option value="">Select a Category</option>
             <option value="Libro">Libro</option>
-            <option value="Esfero">Esfero</option>
             <option value="Lapiz">Lapiz</option>
+            <option value="Esfero">Esfero</option>
         </select>
         <select id="brand">
-            <option value="">Seleccione una Marca</option>
+            <option value="">Select a Brand</option>
             <option value="Norma">Norma</option>
             <option value="Estilo">Estilo</option>
-            <option value="Bic">Bic</option>
+            <option value="BIC">BIC</option>
         </select>
-        <button id="filter-btn">Filtrar</button>
+        <button id="filter-btn">Filter</button>
     </div>
 
     <div id="catalog" class="catalog-container"></div>
@@ -140,32 +150,43 @@
 
         function loadProducts(category = "", brand = "") {
             const catalogContainer = document.getElementById("catalog");
-            catalogContainer.innerHTML = ""; // Limpiar el contenedor
+            catalogContainer.innerHTML = ""; // Clear the container
 
             let url = "http://34.200.95.242:8005/api/search?";
             if (category) url += `category=${category}&`;
             if (brand) url += `brand=${brand}`;
 
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(product => {
-                        const productCard = document.createElement("div");
-                        productCard.classList.add("product-card");
-                        productCard.innerHTML = `
-                            <img src="${product.image_url}" alt="${product.name}" class="product-image">
-                            <h3>${product.name}</h3>
-                            <p>Precio: $${product.price}</p>
-                            <p>Categoría: ${product.category}</p>
-                            <p>Marca: ${product.brand}</p>
-                            <button onclick="viewDetail('${product.id}')">Detalle</button>
-                        `;
-                        catalogContainer.appendChild(productCard);
-                    });
-                })
-                .catch(error => {
-                    console.error("Error al cargar los productos filtrados:", error);
+            fetch(url, {
+                headers: { "Authorization": `Bearer ${localStorage.getItem("access_token")}` }
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    alert("Session expired. Please log in again.");
+                    localStorage.removeItem("access_token");
+                    window.location.href = "login.html";
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+                data.forEach(product => {
+                    const productCard = document.createElement("div");
+                    productCard.classList.add("product-card");
+                    productCard.innerHTML = `
+                        <img src="${product.image_url}" alt="${product.name}" class="product-image">
+                        <h3>${product.name}</h3>
+                        <p>Price: $${product.price}</p>
+                        <p>Category: ${product.category}</p>
+                        <p>Brand: ${product.brand}</p>
+                        <button onclick="viewDetail('${product.id}')">View Details</button>
+                    `;
+                    catalogContainer.appendChild(productCard);
                 });
+            })
+            .catch(error => {
+                console.error("Error loading products:", error);
+            });
         }
 
         function viewDetail(productId) {
@@ -177,6 +198,10 @@
             const selectedCategory = document.getElementById("category").value;
             const selectedBrand = document.getElementById("brand").value;
             loadProducts(selectedCategory, selectedBrand);
+        });
+
+        document.getElementById("view-cart").addEventListener("click", function () {
+            window.location.href = "cart.html";
         });
 
         document.getElementById("logout").addEventListener("click", function () {
@@ -200,17 +225,18 @@
                     window.location.href = "login.html"; 
                 } else {
                     return response.json().then(data => { 
-                        alert("Error al cerrar sesión: " + data.detail);
+                        alert("Error logging out: " + data.detail);
                     });
                 }
             })
             .catch(error => {
-                console.error("Error al cerrar sesión:", error);
+                console.error("Error logging out:", error);
             });
         });
     </script>
 </body>
 </html>
+
 
 
 

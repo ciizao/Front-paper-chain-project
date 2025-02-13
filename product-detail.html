@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalle del Producto</title>
+    <title>Product Detail</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -94,28 +94,43 @@
         .cart-btn:hover {
             background-color: #218838;
         }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #67e986;
+            color: rgb(0, 0, 0);
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="title">CRISBOOK</div>
     <div class="container">
-        <img id="product-image" class="product-image" alt="Producto">
+        <img id="product-image" class="product-image" alt="Product">
         <div class="product-info">
             <h2 id="product-name"></h2>
             <p id="product-detail"></p>
-            <p><strong>Precio:</strong> <span id="product-price"></span></p>
-            <p><strong>Categoría:</strong> <span id="product-category"></span></p>
-            <p><strong>Marca:</strong> <span id="product-brand"></span></p>
-            <p><strong>Stock disponible:</strong> <span id="product-stock"></span></p>
-            <label for="quantity">Cantidad:</label>
+            <p><strong>Price:</strong> <span id="product-price"></span></p>
+            <p><strong>Category:</strong> <span id="product-category"></span></p>
+            <p><strong>Brand:</strong> <span id="product-brand"></span></p>
+            <p><strong>Stock available:</strong> <span id="product-stock"></span></p>
+            <label for="quantity">Quantity:</label>
             <input type="number" id="quantity" min="1" value="1">
             <div class="buttons">
-                <button class="back-btn" onclick="goBack()">← Volver</button>
-                <button onclick="addToCart()">🛍️ Agregar al carrito</button>
-                <button class="cart-btn" id="view-cart" onclick="viewCart()">🛒 Ver Carrito</button>
+                <button class="back-btn" onclick="goBack()">← Back</button>
+                <button onclick="addToCart()">🛍️ Add to Cart</button>
+                <button class="cart-btn" id="view-cart" onclick="viewCart()">🛒 View Cart</button>
             </div>
         </div>
     </div>
+
+    <div id="notification" class="notification">Product added to cart!</div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -127,7 +142,15 @@
             }
 
             fetch(`http://34.200.95.242:8000/products/${productId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 401) {
+                    alert("Session expired. Please log in again.");
+                    localStorage.removeItem("access_token");
+                    window.location.href = "login.html";
+                    return;
+                }
+                return response.json();
+            })
             .then(product => {
                 document.getElementById("product-image").src = product.image_url;
                 document.getElementById("product-name").textContent = product.name;
@@ -138,7 +161,7 @@
                 document.getElementById("product-stock").textContent = product.stock;
             })
             .catch(error => {
-                console.error("Error al obtener detalles del producto:", error);
+                console.error("Error loading product details:", error);
             });
         });
 
@@ -149,10 +172,11 @@
         function addToCart() {
             const productId = localStorage.getItem("selectedProduct");
             const quantity = document.getElementById("quantity").value;
-            const token = localStorage.getItem("access_token"); 
+            const token = localStorage.getItem("access_token");
 
             if (!token) {
-                alert("Debes iniciar sesión para agregar productos al carrito.");
+                alert("You must be logged in to add products to the cart.");
+                window.location.href = "login.html";
                 return;
             }
 
@@ -169,23 +193,41 @@
                 },
                 body: JSON.stringify(cartData)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 401) {
+                    alert("Session expired. Please log in again.");
+                    localStorage.removeItem("access_token");
+                    window.location.href = "login.html";
+                    return;
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    alert("Producto agregado al carrito con éxito.");
+                    showNotification("Product added to cart!");
                 } else {
-                    alert("Error al agregar al carrito: " + (data.message || "Inténtalo nuevamente."));
+                    showNotification("Error adding product to cart. Try again.");
                 }
             })
             .catch(error => {
-                alert("Ocurrió un error al agregar el producto.");
+                showNotification("An error occurred while adding the product.");
             });
         }
 
         function viewCart() {
             window.location.href = "cart.html";
         }
+
+        function showNotification(message) {
+            const notification = document.getElementById("notification");
+            notification.textContent = message;
+            notification.style.display = "block";
+            setTimeout(() => {
+                notification.style.display = "none";
+            }, 3000);
+        }
     </script>
 </body>
 </html>
+
 

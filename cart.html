@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffc130;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .cart-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; 
+            background: #f1e0b8;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .cart-item img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .cart-item-info {
+            flex: 1;
+            text-align: left;
+            margin-left: 15px;
+        }
+        h1 {
+            font-size: 30px;
+            color: #333;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .cancel-btn {
+            background-color: #d9534f;
+        }
+        .cancel-btn:hover {
+            background-color: #c9302c;
+        }
+        .confirm-btn {
+            background-color: #28a745;
+        }
+        .confirm-btn:hover {
+            background-color: #218838;
+        }
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button onclick="goBack()" class="cancel-btn">← Back</button>
+        <h1>Shopping Cart</h1>
+        <div id="cart-items"></div>
+        <p id="total-price"></p>
+        <button onclick="cancelCart()" class="cancel-btn">Cancel Cart</button>
+        <button onclick="confirmOrder()" class="confirm-btn">Confirm Order</button>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = localStorage.getItem("access_token");
+
+            if (!token) {
+                redirectToLogin("You must be logged in to view the cart.");
+                return;
+            }
+
+            function getUserIdFromToken(token) {
+                try {
+                    const payload = JSON.parse(atob(token.split(".")[1]));
+                    return payload.user_id;
+                } catch (error) {
+                    console.error("Error extracting user_id from token:", error);
+                    return null;
+                }
+            }
+
+            const userId = getUserIdFromToken(token);
+            if (!userId) {
+                redirectToLogin("Session expired. Please log in again.");
+                return;
+            }
+
+            // Obtener productos en el carrito
+            fetch(`http://3.213.45.98:8086/api/cart/user/${userId}`, {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    redirectToLogin("Session expired. Please log in again.");
+                    return;
+                }
+                return response.json();
+            })
+            .then(cart => {
+                if (!cart.items || cart.items.length === 0) {
+                    document.getElementById("cart-items").innerHTML = "<p>Your cart is empty.</p>";
+                    return;
+                }
+
+                let totalPrice = 0;
+                const cartItemsContainer = document.getElementById("cart-items");
+
+                // Obtener imágenes de los productos desde GraphQL
+                const graphqlQuery = {
+                    query: `{ catalogProducts { id image_url } }`
+                };
+
+                fetch("http://18.234.5.75:4000/products", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(graphqlQuery)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const productImages = data.data.catalogProducts.reduce((acc, product) => {
+                        acc[product.id] = product.image_url;
+                        return acc;
+                    }, {});
+
+                    cart.items.forEach(item => {
+                    totalPrice += item.price * item.quantity;
+                    const itemElement = document.createElement("div");
+                    itemElement.classList.add("cart-item");
+
+                    // Obtener la imagen del producto
+                    const imageUrl = productImages[item.product_id] || "placeholder.jpg";
+
+                    itemElement.innerHTML = `
+                        <img src="${imageUrl}" alt="${item.name}" class="product-image">
+                            <h3>${item.name}</h3>
+                            <p>Precio: $${item.price}</p>
+                            <p>Cantidad: ${item.quantity}</p>
+                    `;
+                    cartItemsContainer.appendChild(itemElement);
+                });
+
+                    document.getElementById("total-price").textContent = `Total: $${totalPrice.toFixed(2)}`;
+                })
+                .catch(error => {
+                    console.error("Error loading product images:", error);
+                });
+            })
+            .catch(error => {
+                console.error("Error loading cart:", error);
+            });
+
+            // Function to cancel the cart with confirmation
+            window.cancelCart = function () {
+                if (!confirm("Are you sure you want to cancel the cart?")) {
+                    return;
+                }
+
+                fetch(`http://3.213.45.98:8086/api/cart/user/${userId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = "catalog.html";
+                    } else {
+                        showNotification("Error canceling the cart.");
+                    }
+                })
+                .catch(error => {
+                    showNotification("Error canceling the cart.");
+                });
+            };
+
+            // Function to confirm the order
+            window.confirmOrder = function () {
+                fetch(`http://3.213.45.98:8086/api/cart/user/${userId}`, {
+                    method: "GET",
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+                .then(response => response.json())
+                .then(cart => {
+                    if (!cart.items || cart.items.length === 0) {
+                        showNotification("You cannot confirm an order without products.");
+                        return;
+                    }
+
+                    const orderData = {
+                        user_id: userId,
+                        items: cart.items.map(item => ({
+                            product_id: item.product_id,
+                            name: item.name,
+                            price: item.price,
+                            quantity: item.quantity
+                        })),
+                        total_price: cart.total_price
+                    };
+
+                    return fetch("http://3.213.45.98:8087/checkout", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: JSON.stringify(orderData)
+                    });
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.order_id) {
+                        localStorage.setItem("order_id", data.order_id);
+                        window.location.href = "order.html";
+                    } else {
+                        showNotification("Error confirming the order.");
+                    }
+                })
+                .catch(error => {
+                    showNotification("Error confirming the order.");
+                });
+            };
+        });
+
+        function goBack() {
+            window.location.href = "catalog.html";
+        }
+
+        function redirectToLogin(message) {
+            localStorage.removeItem("access_token");
+            alert(message);
+            window.location.href = "login.html";
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
